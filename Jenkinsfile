@@ -55,14 +55,21 @@ pipeline {
             }
         }
         
-        stage('Docker Build & Push') {
+        stage('Docker Push Image') {
             steps {
                 script{
-                    withDockerRegistry(credentialsId: '2fe19d8a-3d12-4b82-ba20-9d22e6bf1672', toolName: 'docker') {
-                        
-                        sh "docker build -t shopping-cart -f docker/Dockerfile ."
-                        sh "docker tag  shopping-cart adijaiswal/shopping-cart:latest"
-                        sh "docker push adijaiswal/shopping-cart:latest"
+                    withDockerRegistory(credentialId: 'docker-cred', toolName: 'docker'){ 
+                        sh "make push"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Docker Container') {
+            steps {
+                script{
+                    withDockerRegistory(credentialId: 'docker-cred', toolName: 'docker'){ 
+                        sh "docker run -d -p 5000:5000 aaaa/python-webapp:latest"
                     }
                 }
             }
