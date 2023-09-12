@@ -1,8 +1,8 @@
 pipeline {
     agent any
+    
     tools{
-        jdk  'jdk11'
-        maven  'maven3'
+        jdk  'jdk17'
     }
     
     environment{
@@ -14,18 +14,18 @@ pipeline {
             steps {
                 git branch: 'main', changelog: false, credentialsId: '15fb69c3-3460-4d51-bd07-2b0545fa5151', poll: false, url: 'https://github.com/jaiswaladi246/Shopping-Cart.git'
             }
-        }
-        
-        stage('COMPILE') {
-            steps {
-                sh "mvn clean compile -DskipTests=true"
-            }
-        }
+        }      
         
         stage('OWASP Scan') {
             steps {
                 dependencyCheck additionalArguments: '--scan ./ ', odcInstallation: 'DP'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
+
+        stage('Trivy') {
+            steps {
+                 sh "trivy fs ."
             }
         }
         
@@ -37,11 +37,21 @@ pipeline {
                    -Dsonar.projectKey=Shopping-Cart '''
                }
             }
-        }
+        }       
         
-        stage('Build') {
+        stage('Docker Build and Tag') {
             steps {
-                sh "mvn clean package -DskipTests=true"
+                script{
+                    withDockerRegistory(credentialId: 'docker-cred', toolName: 'docker'){ 
+                        sh "make image"
+                    }
+                }
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            steps {
+                 sh "trivy image aaaa/python-webapp:latest"
             }
         }
         
